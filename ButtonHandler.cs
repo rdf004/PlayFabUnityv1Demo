@@ -1,4 +1,4 @@
-﻿using PlayFab;
+using PlayFab;
 using PlayFab.GroupsModels;
 using PlayFab.ClientModels;
 using PlayFab.Json;
@@ -27,12 +27,6 @@ public class ButtonHandler : MonoBehaviour
 
         var request = new LoginWithCustomIDRequest { CustomId = "GettingStartedGuide", CreateAccount = true};
         PlayFabClientAPI.LoginWithCustomID(request, OnLoginSuccess, OnLoginFailure);
-
-
-        
-        // EntityKey ek = EntityKeyMaker("1D8CF");
-        // CreateGroup("myWishlist", ek);
-        // ListGroups(ek);
 
     }
 
@@ -94,8 +88,8 @@ public class ButtonHandler : MonoBehaviour
         PlayFabCloudScriptAPI.ExecuteEntityCloudScript(new PlayFab.CloudScriptModels.ExecuteEntityCloudScriptRequest()
         {
             Entity = new PlayFab.CloudScriptModels.EntityKey {Id = my_id, Type = my_type},
-            FunctionName = "makeEntityAPICall", // Arbitrary function name (must exist in your uploaded cloud.js file)
-            FunctionParameter = new { prop1 = "roshan" }, // The parameter provided to your function
+            FunctionName = "createUserWishList", // Arbitrary function name (must exist in your uploaded cloud.js file)
+            FunctionParameter = new { groupName = "myWishlist2" }, // The parameter provided to your function
             GeneratePlayStreamEvent = true // Optional - Shows this event in PlayStream
         }, result => {
             Debug.Log(result.FunctionResult);
@@ -106,9 +100,9 @@ public class ButtonHandler : MonoBehaviour
         // CloudScript returns arbitrary results, so you have to evaluate them one step and one parameter at a time
         Debug.Log(PlayFabSimpleJson.SerializeObject(result.FunctionResult));
         JsonObject jsonResult = (JsonObject)result.FunctionResult;
-        object setResult;
-        jsonResult.TryGetValue("setResult", out setResult); // note how "messageValue" directly corresponds to the JSON values set in CloudScript
-        Debug.Log((string)setResult);
+        object created;
+        jsonResult.TryGetValue("created", out created); // note how "messageValue" directly corresponds to the JSON values set in CloudScript
+        Debug.Log((string)created);
     }
 
     private static void OnErrorShared(PlayFabError error)
