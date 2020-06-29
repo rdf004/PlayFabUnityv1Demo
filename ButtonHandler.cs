@@ -50,6 +50,9 @@ public class ButtonHandler : MonoBehaviour
 
     public void checkIfWishListExists() {
 
+        bool add_item = true;
+        string item_id = "albatross";
+
         PlayFab.GroupsModels.EntityKey entity = new PlayFab.GroupsModels.EntityKey {Id = ButtonHandler.player_entityKeyId, Type = ButtonHandler.player_entityKeyType };
 
         var request = new ListMembershipRequest { Entity = entity };
@@ -85,12 +88,31 @@ public class ButtonHandler : MonoBehaviour
 
                         string x = (string) objectResult.Objects["wishlist"].DataObject;
 
+                        if( add_item ) {
+
+                            // Add item to wishlist
+
+                            if( !WishlistContainsItem(x, item_id) ) {
+                                x += ",";
+                                x += item_id;
+                            }
+
+                        } else {
+
+                            // Remove item from wishlist
+
+                            if( WishlistContainsItem(x, item_id) ) {
+                                x = RemoveItemFromCSV(x, item_id);
+                            }
+
+                        }
+
                         x += ",";
                         x += "albatross, dog, mango";
 
                         UpdateWishlist(group_ek.Id, group_ek.Type, x);
 
-                        Debug.Log(RemoveItemFromCSV(x, "cat"));
+                        // Debug.Log(RemoveItemFromCSV(x, "cat"));
                         
                     }, error => {
                         Debug.LogError(error.GenerateErrorReport());
@@ -118,6 +140,9 @@ public class ButtonHandler : MonoBehaviour
 
             if( found == false ) {
 
+                string group_name = ButtonHandler.player_entityKeyId + "wishlist";
+
+                CreateGroup(group_name, entity);
             }
 
         }, error => {
@@ -141,7 +166,7 @@ public class ButtonHandler : MonoBehaviour
 
     }
 
-    private static bool CheckIfItemInWishlist(string csv, string item_id) {
+    private static bool WishlistContainsItem(string csv, string item_id) {
         string[] items = csv.Split(',');
         int ind = Array.IndexOf(items, item_id);
         List<string> items_list = new List<string>(items);
