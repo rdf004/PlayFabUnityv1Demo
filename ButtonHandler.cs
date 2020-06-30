@@ -31,9 +31,7 @@ public class ButtonHandler : MonoBehaviour
         Dog_Button = GameObject.FindGameObjectWithTag("Dog_Button").GetComponent<Button>();
         Mango_Button = GameObject.FindGameObjectWithTag("Mango_Button").GetComponent<Button>();
 
-        Cat_Button.GetComponentInChildren<Text>().text = "Cat";
-        Dog_Button.GetComponentInChildren<Text>().text = "Dog";
-        Mango_Button.GetComponentInChildren<Text>().text = "Mango Button";
+
 
     }
     
@@ -60,6 +58,64 @@ public class ButtonHandler : MonoBehaviour
         // Need to render button color/text based on what appears in the wishlist
 
         CreateWishlist();
+
+        PlayFab.GroupsModels.EntityKey entity = new PlayFab.GroupsModels.EntityKey {Id = ButtonHandler.player_entityKeyId, Type = ButtonHandler.player_entityKeyType };
+
+        var request = new ListMembershipRequest { Entity = entity };
+
+        PlayFabGroupsAPI.ListMembership( request, membershipResult => {
+
+            Debug.Log(membershipResult.Groups[0].GroupName);
+            bool found = false;
+
+            for (int i = 0; i < membershipResult.Groups.Count; i++ ) {
+                
+                Debug.Log(membershipResult.Groups.Count);
+                Debug.Log(i);
+                string group_name = ButtonHandler.player_entityKeyId + "wishlist";
+                if( membershipResult.Groups[i].GroupName.Equals( group_name ) ) {
+
+                    // Found our group!
+                    // found = true;
+
+                    PlayFab.DataModels.EntityKey group_ek = new PlayFab.DataModels.EntityKey { Id = membershipResult.Groups[i].Group.Id, Type = membershipResult.Groups[i].Group.Type };
+
+                    // Assuming that if the group exists, the wishlist exists
+
+                    // Get wishlist object from group entity
+
+                    GetObjectsRequest getObjectsRequest = new GetObjectsRequest { Entity = group_ek };
+
+                    PlayFabDataAPI.GetObjects(getObjectsRequest, objectResult => {
+                        
+                        // JsonObject jsonResult = (JsonObject) objectResult.Objects["wishlist"].DataObject;
+
+                        Debug.Log(objectResult.Objects["wishlist"].DataObject); // This returns either the object or a CSV, can use for durables or consumables
+
+                        string x = (string) objectResult.Objects["wishlist"].DataObject;
+
+                        string[] items = x.Split(',');
+
+                        for(int j = 0; j < items.Length; j++) {
+
+                            if( items[j].Equals("cat") ) {
+                                Cat_Button.GetComponentInChildren<Text>().text = "Cat (Added!)";
+                                Cat_Button.GetComponent<Image>().color = Color.green;
+                            } else if( items[j].Equals("dog") ) {
+                                Dog_Button.GetComponentInChildren<Text>().text = "Dog (Added!)";
+                                Dog_Button.GetComponent<Image>().color = Color.green;
+                            } else if( items[j].Equals("mango") ) {
+                                Mango_Button.GetComponentInChildren<Text>().text = "Mango (Added!)";
+                                Mango_Button.GetComponent<Image>().color = Color.green;
+                            }
+                        }
+
+                    }, error => { Debug.LogError(error.GenerateErrorReport()); });
+
+                }
+            }
+
+        }, error => { Debug.LogError(error.GenerateErrorReport()); });
 
     }
 
@@ -105,17 +161,23 @@ public class ButtonHandler : MonoBehaviour
 
                         bool contains_item = WishlistContainsItem(x, item_id);
 
+                        bool adding_item;
+
                         if( !contains_item ) {
 
                             // Add item to wishlist
                             x += ",";
                             x += item_id;
 
+                            adding_item = true;
+
                         } else {
 
                             // Remove item from wishlist
 
                             x = RemoveItemFromCSV(x, item_id);
+
+                            adding_item = false;
 
                         }
 
@@ -124,7 +186,7 @@ public class ButtonHandler : MonoBehaviour
                         // x += ",";
                         // x += "albatross, dog, mango";
 
-                        UpdateWishlist(group_ek.Id, group_ek.Type, x);
+                        UpdateWishlist(group_ek.Id, group_ek.Type, x, adding_item, item_id);
 
                         // Debug.Log(RemoveItemFromCSV(x, "cat"));
                         
@@ -143,9 +205,6 @@ public class ButtonHandler : MonoBehaviour
                     // Case 2: Remove item from wishlist
                     // Case 2a: Success
                     // Case 2b: Item not on wishlist
-
-
-
                     
                 } 
             }
@@ -201,7 +260,9 @@ public class ButtonHandler : MonoBehaviour
 
     // }
 
-    private static void UpdateWishlist(string entitykeyId, string entitykeyType, string dataobj) {
+    // Made method non-static
+
+    private void UpdateWishlist(string entitykeyId, string entitykeyType, string dataobj, bool adding_item, string item_id) {
 
         PlayFabCloudScriptAPI.ExecuteEntityCloudScript(new PlayFab.CloudScriptModels.ExecuteEntityCloudScriptRequest() {
 
@@ -212,6 +273,34 @@ public class ButtonHandler : MonoBehaviour
 
         }, result => {
             Debug.Log(result.FunctionResult);
+
+            if( adding_item ) {
+                
+                if( item_id.Equals("cat") ) {
+                    Cat_Button.GetComponentInChildren<Text>().text = "Cat (Added!)";
+                    Cat_Button.GetComponent<Image>().color = Color.green;
+                } else if( item_id.Equals("dog") ) {
+                    Dog_Button.GetComponentInChildren<Text>().text = "Dog (Added!)";
+                    Dog_Button.GetComponent<Image>().color = Color.green;
+                } else if( item_id.Equals("mango") ) {
+                    Mango_Button.GetComponentInChildren<Text>().text = "Mango (Added!)";
+                    Mango_Button.GetComponent<Image>().color = Color.green;
+                }
+
+            } else {
+
+                if( item_id.Equals("cat") ) {
+                    Cat_Button.GetComponentInChildren<Text>().text = "Cat (Add to Wishlist)";
+                    Cat_Button.GetComponent<Image>().color = Color.white;
+                } else if( item_id.Equals("dog") ) {
+                    Dog_Button.GetComponentInChildren<Text>().text = "Dog (Add to Wishlist)";
+                    Dog_Button.GetComponent<Image>().color = Color.white;
+                } else if( item_id.Equals("mango") ) {
+                    Mango_Button.GetComponentInChildren<Text>().text = "Mango (Add to Wishlist)";
+                    Mango_Button.GetComponent<Image>().color = Color.white;
+                }
+
+            }
 
         }, error => { Debug.LogError(error.GenerateErrorReport()); });
 
