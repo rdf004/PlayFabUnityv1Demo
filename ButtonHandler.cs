@@ -23,6 +23,19 @@ public class ButtonHandler : MonoBehaviour
 
     public static string group_entityKeyId;
     public static string group_entityKeyType;
+
+    public Button Login_Button, Arbitrary_Wishlist, Cat_Button, Dog_Button, Mango_Button;
+
+    void Start() {
+        Cat_Button = GameObject.FindGameObjectWithTag("Cat_Button").GetComponent<Button>();
+        Dog_Button = GameObject.FindGameObjectWithTag("Dog_Button").GetComponent<Button>();
+        Mango_Button = GameObject.FindGameObjectWithTag("Mango_Button").GetComponent<Button>();
+
+        Cat_Button.GetComponentInChildren<Text>().text = "Cat";
+        Dog_Button.GetComponentInChildren<Text>().text = "Dog";
+        Mango_Button.GetComponentInChildren<Text>().text = "Mango Button";
+
+    }
     
     public void clicked() {
         if (string.IsNullOrEmpty(PlayFabSettings.staticSettings.TitleId)){
@@ -44,14 +57,16 @@ public class ButtonHandler : MonoBehaviour
         ButtonHandler.player_entityKeyId = result.EntityToken.Entity.Id;
         ButtonHandler.player_entityKeyType = result.EntityToken.Entity.Type;
 
+        // Need to render button color/text based on what appears in the wishlist
+
         CreateWishlist();
 
     }
 
-    public void checkIfWishListExists() {
+    public void checkIfWishListExists(string item_id) {
 
-        bool add_item = true;
-        string item_id = "albatross";
+        // bool add_item = true;
+        // string item_id = "albatross";
 
         PlayFab.GroupsModels.EntityKey entity = new PlayFab.GroupsModels.EntityKey {Id = ButtonHandler.player_entityKeyId, Type = ButtonHandler.player_entityKeyType };
 
@@ -88,27 +103,26 @@ public class ButtonHandler : MonoBehaviour
 
                         string x = (string) objectResult.Objects["wishlist"].DataObject;
 
-                        if( add_item ) {
+                        bool contains_item = WishlistContainsItem(x, item_id);
+
+                        if( !contains_item ) {
 
                             // Add item to wishlist
-
-                            if( !WishlistContainsItem(x, item_id) ) {
-                                x += ",";
-                                x += item_id;
-                            }
+                            x += ",";
+                            x += item_id;
 
                         } else {
 
                             // Remove item from wishlist
 
-                            if( WishlistContainsItem(x, item_id) ) {
-                                x = RemoveItemFromCSV(x, item_id);
-                            }
+                            x = RemoveItemFromCSV(x, item_id);
 
                         }
 
-                        x += ",";
-                        x += "albatross, dog, mango";
+                        Debug.Log(x);
+
+                        // x += ",";
+                        // x += "albatross, dog, mango";
 
                         UpdateWishlist(group_ek.Id, group_ek.Type, x);
 
