@@ -72,10 +72,12 @@ public class ButtonHandler : MonoBehaviour
                     */
 
                     PlayFabDataAPI.GetObjects(getObjectsRequest, objectResult => {
-
-                        string wl = (string) objectResult.Objects["wishlist"].DataObject;
-                        /* Set up the Unity game store. Specifically, change colors and button text if an item is on the wishlist */
-                        StoreSetup.SetUpStore(wl, false);
+                        
+                        if( !string.IsNullOrEmpty( (string) objectResult.Objects["wishlist"].DataObject ) ) {
+                            string wl = (string) objectResult.Objects["wishlist"].DataObject;
+                            /* Set up the Unity game store. Specifically, change colors and button text if an item is on the wishlist */
+                            StoreSetup.SetUpStore(wl, false);
+                        }
 
                     }, error => { Debug.LogError(error.GenerateErrorReport()); });
 
@@ -123,19 +125,30 @@ public class ButtonHandler : MonoBehaviour
         /* GetObjects to get the wish list in CSV form. */
         PlayFabDataAPI.GetObjects(getObjectsRequest, objectResult => {
 
-            string wl = (string) objectResult.Objects["wishlist"].DataObject; // string of the CSV of items on the wish list
+            string wl;
             bool adding_item; // This tells us whether we are adding or removing an item from the wish list
 
-            if( !WishlistContainsItem(wl, item_id) ) {
-                /* Wish list does not contain the item, so we must add it. */
-                wl = AddItemToCSV(wl, item_id);
-                adding_item = true;
 
+            if( !string.IsNullOrEmpty( (string) objectResult.Objects["wishlist"].DataObject ) ) {
+                                    
+                wl = (string) objectResult.Objects["wishlist"].DataObject; // string of the CSV of items on the wish list
+                
+                if( !WishlistContainsItem(wl, item_id) ) {
+                    
+                    /* Wish list does not contain the item, so we must add it. */
+                    wl = AddItemToCSV(wl, item_id);
+                    adding_item = true;
+
+                } else {
+                    /* Wish list contains item, so we must remove it. */
+                    wl = RemoveItemFromCSV(wl, item_id);
+                    adding_item = false;
+
+                }
             } else {
-                /* Wish list contains item, so we must remove it. */
-                wl = RemoveItemFromCSV(wl, item_id);
-                adding_item = false;
 
+                wl = item_id;
+                adding_item = true;
             }
 
             /* UpdateGroupObject is where the entity group data is actually updated */
@@ -278,6 +291,11 @@ public class ButtonHandler : MonoBehaviour
             GeneratePlayStreamEvent = true
 
         }, result => {
+
+            JsonObject jsonResult = (JsonObject) result.FunctionResult;
+
+            ButtonHandler.group_entityKeyId = (string) jsonResult["ek_id"];
+            ButtonHandler.group_entityKeyType = (string) jsonResult["ek_type"];
 
         }, error => { Debug.LogError(error.GenerateErrorReport()); });
 
